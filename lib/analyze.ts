@@ -1,7 +1,8 @@
 // 동종업계 연결주석 항목별 비교 분석 (04_build_audit_report.py 의 웹 버전).
 // 카테고리 1개 = LLM 1회. 클라이언트가 카테고리별로 호출해 점진 렌더한다.
+// 주석 데이터는 픽스처 또는 DART 라이브에서 비동기로 가져온다.
 import { getPeers } from "@/lib/companies";
-import { getNotesByCode, hasNotes } from "@/lib/dart/store";
+import { getCompanyNotes, hasNotes, type CompanyNotes } from "@/lib/dart/store";
 import { CATEGORY_ORDER } from "@/lib/dart/notes";
 import { callLLM } from "@/lib/llm";
 
@@ -27,7 +28,10 @@ export interface AnalysisPlan {
  * 기준기업 + 동종기업 중 주석 보유 기업과, 그 합집합 카테고리를 산출.
  * @param selectedCodes 비교 대상으로 선택된 종목코드(있으면 그 집합으로 한정, 기준기업은 항상 포함)
  */
-export function getAnalysisPlan(baseCode: string, selectedCodes?: string[]): AnalysisPlan | null {
+export async function getAnalysisPlan(
+  baseCode: string,
+  selectedCodes?: string[]
+): Promise<AnalysisPlan | null> {
   const peers = getPeers(baseCode);
   if (!peers) return null;
 
@@ -39,12 +43,12 @@ export function getAnalysisPlan(baseCode: string, selectedCodes?: string[]): Ana
   }
   const companies = all.map((c) => ({ code: c.code, name: c.name }));
 
+  // 각 기업의 주석을 가져와(캐시됨) 카테고리 합집합 산출
   const catSet = new Set<string>();
   for (const c of companies) {
-    const notes = getNotesByCode(c.code);
+    const notes = await getCompanyNotes(c.code, c.name);
     notes?.items.forEach((it) => catSet.add(it.category));
   }
-  // 회계 흐름 순 정렬(룰에 없는 '기타:'는 뒤로)
   const categories = [...catSet].sort((a, b) => {
     const ia = CATEGORY_ORDER.indexOf(a);
     const ib = CATEGORY_ORDER.indexOf(b);
@@ -54,9 +58,8 @@ export function getAnalysisPlan(baseCode: string, selectedCodes?: string[]): Ana
   return { base: { code: peers.base.code, name: peers.base.name }, companies, categories };
 }
 
-/** 한 회사의 특정 카테고리 주석 본문을 합쳐 트렁케이트. 없으면 "". */
-function categoryText(code: string, category: string): string {
-  const notes = getNotesByCode(code);
+/** 주석 객체에서 특정 카테고리 본문을 합쳐 트렁케이트. */
+function categoryTextFrom(notes: CompanyNotes | null, category: string): string {
   if (!notes) return "";
   const parts = notes.items
     .filter((it) => it.category === category)
@@ -64,13 +67,17 @@ function categoryText(code: string, category: string): string {
   return parts.join("\n").slice(0, MAXCHARS);
 }
 
-function buildMessages(plan: AnalysisPlan, category: string) {
+function buildMessages(
+  plan: AnalysisPlan,
+  category: string,
+  notesByCode: Record<string, CompanyNotes | null>
+) {
   const baseName = plan.base.name;
   const peerNames = plan.companies.filter((c) => c.code !== plan.base.code).map((c) => c.name);
 
   const body = plan.companies
     .map((c) => {
-      const t = categoryText(c.code, category);
+      const t = categoryTextFrom(notesByCode[c.code], category);
       return `=== ${c.name} ===\n${t || "해당 주석 없음"}`;
     })
     .join("\n\n");
@@ -99,7 +106,7 @@ ${body}
   return [{ role: "user" as const, content: instruct }];
 }
 
-function parseJson(text: string, plan: AnalysisPlan): AnalysisResult {
+function parseJson(text: string): AnalysisResult {
   const m = text.match(/\{[\s\S]*\}/);
   if (m) {
     try {
@@ -117,10 +124,14 @@ function parseJson(text: string, plan: AnalysisPlan): AnalysisResult {
   };
 }
 
-function mockResult(plan: AnalysisPlan, category: string): AnalysisResult {
+function mockResult(
+  plan: AnalysisPlan,
+  category: string,
+  notesByCode: Record<string, CompanyNotes | null>
+): AnalysisResult {
   const byco: Record<string, string> = {};
   for (const c of plan.companies) {
-    byco[c.name] = categoryText(c.code, category)
+    byco[c.name] = categoryTextFrom(notesByCode[c.code], category)
       ? `(모의) ${c.name}의 '${category}' 회계처리 요약입니다.`
       : "해당 없음";
   }
@@ -142,7 +153,7 @@ export async function analyzeCategory(
   category: string,
   selectedCodes?: string[]
 ): Promise<{ category: string; result: AnalysisResult } | null> {
-  const plan = getAnalysisPlan(baseCode, selectedCodes);
+  const plan = await getAnalysisPlan(baseCode, selectedCodes);
   if (!plan) return null;
   if (!plan.categories.includes(category)) return null;
 
@@ -152,15 +163,19 @@ export async function analyzeCategory(
   const cached = cache.get(key);
   if (cached) return { category, result: cached };
 
+  // 비교 기업들의 주석(캐시됨)
+  const notesByCode: Record<string, CompanyNotes | null> = {};
+  for (const c of plan.companies) notesByCode[c.code] = await getCompanyNotes(c.code, c.name);
+
   if (process.env.LLM_MOCK === "1") {
-    const result = mockResult(plan, category);
+    const result = mockResult(plan, category, notesByCode);
     cache.set(key, result);
     return { category, result };
   }
 
-  const messages = buildMessages(plan, category);
+  const messages = buildMessages(plan, category, notesByCode);
   const { text, inputTokens, outputTokens } = await callLLM(messages, { temperature: 0.2 });
-  const result = parseJson(text, plan);
+  const result = parseJson(text);
   result._tokens = [inputTokens, outputTokens];
   cache.set(key, result);
   return { category, result };

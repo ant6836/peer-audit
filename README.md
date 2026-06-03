@@ -10,21 +10,22 @@
 - 🏢 선택한 기업의 업종 표시
 - 👥 같은 업종 동종기업 목록
 - 📄 **연결재무제표 주석 뷰어** — 항목별 제목·표준카테고리·글자수·표수, 클릭하면 본문 펼침
-- 🤖 **동종업계 비교 분석** — 주석 카테고리별로 LLM(OpenRouter)이 회사별 회계처리·공통점·기준기업 특이점·감사 주목포인트를 횡단 비교. 카테고리별 개별 분석 또는 전체 분석(동시 4개).
+- 🤖 **동종업계 비교 분석** — 주석 카테고리별로 LLM(OpenRouter)이 회사별 회계처리·공통점·기준기업 특이점·감사 주목포인트를 횡단 비교. 동종기업 선택(체크박스) · 카테고리별 개별 분석 또는 전체 분석(동시 4개).
+- 🌐 **live DART 연동** — 6개 쇼케이스 외 **임의 상장사**도 DART OpenAPI에서 최신 사업보고서를 받아 연결주석을 실시간 파싱(종목코드→corp_code 번들 맵 + document.xml 압축해제 + 파서 재사용).
 
-> 다음 단계(선택): 분석결과 MD/XLSX 다운로드 · 임의 기업 live DART 연동.
+> 다음 단계(선택): 분석결과 MD/XLSX 다운로드 · 분석/주석 영속 캐시.
 
-## 배포(Vercel) 환경변수 — 비교 분석에 필요
+## 배포(Vercel) 환경변수 — Settings → Environment Variables
 
-MVP-2 분석은 OpenRouter 호출이 필요합니다. Vercel 프로젝트 **Settings → Environment Variables**에 등록:
+| 변수 | 값 | 용도 |
+|---|---|---|
+| `LLM_API_KEY` | `sk-or-v1-...` | OpenRouter 키 (비교 분석) |
+| `LLM_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter 엔드포인트 |
+| `LLM_MODEL_NAME` | 사용할 모델 slug | 분석 모델 |
+| `DART_API_KEY` | DART 인증키 | **임의 상장사 라이브 주석 조회**(없으면 6개 쇼케이스만) |
 
-| 변수 | 값 |
-|---|---|
-| `LLM_API_KEY` | `sk-or-v1-...` (OpenRouter 키) |
-| `LLM_BASE_URL` | `https://openrouter.ai/api/v1` |
-| `LLM_MODEL_NAME` | 사용할 모델 slug |
-
-> `LLM_MOCK`은 **넣지 말 것**(넣으면 모의응답). 로컬은 사내망 TLS로 OpenRouter 직접호출이 막혀 `.env.local`에 `LLM_MOCK=1`로 모의응답 검증, 실제 호출은 Vercel에서 동작.
+> `LLM_MOCK`은 **넣지 말 것**(넣으면 모의응답). 로컬은 사내망 TLS로 OpenRouter·DART 직접호출이 막혀
+> `.env.local`에 `LLM_MOCK=1` + DART 키 미설정으로 픽스처/모의 검증, 실제 호출은 Vercel에서 동작.
 
 ## 데이터 출처
 

@@ -3,14 +3,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAnalysisPlan, analyzeCategory } from "@/lib/analyze";
 
-export function GET(req: NextRequest) {
+export const maxDuration = 60; // 라이브 DART 조회·파싱 여유
+
+export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code")?.trim() ?? "";
   if (!code) {
     return NextResponse.json({ error: "code 파라미터가 필요합니다." }, { status: 400 });
   }
   const codesParam = req.nextUrl.searchParams.get("codes")?.trim();
   const codes = codesParam ? codesParam.split(",").filter(Boolean) : undefined;
-  const plan = getAnalysisPlan(code, codes);
+  const plan = await getAnalysisPlan(code, codes);
   if (!plan || plan.companies.length < 2) {
     return NextResponse.json({
       available: false,
