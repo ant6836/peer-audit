@@ -99,7 +99,8 @@ function tableToMarkdown(tableHtml: string): string {
     for (const part of parts) {
       const m = part.match(/<\/T[DHE]>/i);
       const content = m ? part.slice(0, m.index) : part; // 종료태그 전까지가 셀 내용
-      let txt = content.replace(/<[^>]+>/g, " ");
+      // 진짜 태그(라틴/! 시작)만 제거 — <당기말> 같은 한글 꺾쇠 텍스트는 보존
+      let txt = content.replace(/<\/?[A-Za-z!][^>]*>/g, " ");
       txt = txt.replace(/&[a-zA-Z#0-9]+;/g, " ");
       txt = txt.replace(/\s+/g, " ").trim();
       cells.push(txt.replace(/\|/g, "\\|"));
@@ -133,9 +134,16 @@ function toPlain(section: string): [number, string] {
     tables.push(md);
     return `\x00T${tables.length - 1}\x00`;
   });
-  s = s.replace(/<[^>]+>/g, " ");
+  // 블록 경계(문단·줄바꿈)는 줄바꿈으로 보존
+  s = s.replace(/<\/p>|<br\s*\/?>|<\/title>|<\/li>|<\/div>/gi, "\n");
+  // 진짜 태그(라틴/! 시작)만 제거 — <당기말> 같은 한글 꺾쇠는 보존
+  s = s.replace(/<\/?[A-Za-z!][^>]*>/g, " ");
   s = s.replace(/&[a-zA-Z#0-9]+;/g, " ");
-  s = s.replace(/\s+/g, " ").trim();
+  // 줄바꿈은 유지하고 그 외 공백만 한 칸으로 압축
+  s = s.replace(/[^\S\n]+/g, " ");
+  // 줄별 트림 + 과도한 빈 줄(3줄 이상)은 한 줄로 정리
+  s = s.split("\n").map((l) => l.trim()).join("\n").replace(/\n{3,}/g, "\n\n");
+  // 표 placeholder 복원
   s = s.replace(/\x00T(\d+)\x00/g, (_, i) => "\n\n" + tables[Number(i)] + "\n\n");
   return [tables.length, s.replace(/\n{3,}/g, "\n\n").trim()];
 }

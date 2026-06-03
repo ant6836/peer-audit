@@ -4,7 +4,7 @@
 
 export type NoteBlock =
   | { type: "p"; text: string }
-  | { type: "table"; head: string[]; rows: string[][] };
+  | { type: "table"; head: string[]; rows: string[][]; caption?: string };
 
 // 한 줄 → 셀 배열. 양끝 파이프 제거, 이스케이프되지 않은 '|'로 분할 후 \| 복원.
 function parseCells(line: string): string[] {
@@ -44,8 +44,23 @@ export function parseNoteBlocks(text: string): NoteBlock[] {
           if (t) out.push({ type: "p", text: t });
           continue;
         }
+        // 상단의 희소한 행(예: '<당기말>  (단위: 천원)')은 데이터 헤더가 아니라
+        // 캡션 → 표 위로 분리. (비어있지 않은 셀 ≤2 & 빈 셀 ≥2)
+        const captionParts: string[] = [];
+        while (rows.length > 2) {
+          const ne = rows[0].filter((c) => c !== "").length;
+          if (ne >= 1 && ne <= 2 && width - ne >= 2) {
+            captionParts.push(rows[0].filter(Boolean).join("  "));
+            rows.shift();
+          } else break;
+        }
         const [head, ...body] = rows;
-        out.push({ type: "table", head, rows: body });
+        out.push({
+          type: "table",
+          head,
+          rows: body,
+          caption: captionParts.length ? captionParts.join(" · ") : undefined,
+        });
         continue;
       }
     }

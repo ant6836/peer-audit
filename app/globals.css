@@ -719,8 +719,17 @@ td.chk input[type="checkbox"] {
 
 /* 주석 표 — 마크다운 → 실제 표 */
 .note-table-wrap {
-  overflow-x: auto;
   margin: 10px 0 16px;
+}
+
+.note-caption {
+  font-size: 12px;
+  color: var(--gravel);
+  margin-bottom: 5px;
+}
+
+.note-table-box {
+  overflow-x: auto;
   border: 1px solid var(--chalk);
   border-radius: 10px;
 }

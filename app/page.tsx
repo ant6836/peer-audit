@@ -11,16 +11,19 @@ function NoteText({ text }: { text: string }) {
       {blocks.map((b, i) =>
         b.type === "table" ? (
           <div className="note-table-wrap" key={i}>
-            <table className="note-table">
-              <thead>
-                <tr>{b.head.map((c, j) => <th key={j}>{c}</th>)}</tr>
-              </thead>
-              <tbody>
-                {b.rows.map((r, ri) => (
-                  <tr key={ri}>{r.map((c, ci) => <td key={ci}>{c}</td>)}</tr>
-                ))}
-              </tbody>
-            </table>
+            {b.caption && <div className="note-caption">{b.caption}</div>}
+            <div className="note-table-box">
+              <table className="note-table">
+                <thead>
+                  <tr>{b.head.map((c, j) => <th key={j}>{c}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {b.rows.map((r, ri) => (
+                    <tr key={ri}>{r.map((c, ci) => <td key={ci}>{c}</td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <p className="note-p" key={i}>{b.text}</p>
