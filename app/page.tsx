@@ -100,6 +100,8 @@ export default function Home() {
   const [anBusy, setAnBusy] = useState<Record<string, boolean>>({});
   const [runningAll, setRunningAll] = useState(false);
   const [sel, setSel] = useState<string[]>([]); // 비교 선택된 동종기업 코드(기준기업 제외)
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [anErr, setAnErr] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!query.trim()) {
@@ -163,27 +165,40 @@ export default function Home() {
     const codes = [baseCode, ...sel];
     setPlanLoading(true);
     setPlan(null);
+    setPlanError(null);
     setAnResults({});
     setAnBusy({});
-    const res = await fetch(`/api/analyze?code=${baseCode}&codes=${codes.join(",")}`);
-    const data: AnalysisPlan = await res.json();
-    setPlan(data);
-    setPlanLoading(false);
-    setTimeout(() => document.getElementById("analysis-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    setAnErr({});
+    try {
+      const res = await fetch(`/api/analyze?code=${baseCode}&codes=${codes.join(",")}`);
+      if (!res.ok) throw new Error(`서버 응답 오류 (${res.status}) — 보고서가 크면 시간 초과일 수 있어요. 기업 수를 줄여보세요.`);
+      const data: AnalysisPlan = await res.json();
+      setPlan(data);
+      setTimeout(() => document.getElementById("analysis-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    } catch (e) {
+      setPlanError(e instanceof Error ? e.message : "분석 준비에 실패했습니다.");
+    } finally {
+      setPlanLoading(false);
+    }
   }
 
   // 카테고리 1개 분석 (이미 있거나 진행 중이면 스킵)
   async function analyzeOne(baseCode: string, category: string, codes: string[]) {
     if (anResults[category] || anBusy[category]) return;
     setAnBusy((b) => ({ ...b, [category]: true }));
+    setAnErr((e) => ({ ...e, [category]: "" }));
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: baseCode, category, codes }),
       });
+      if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
       const data = await res.json();
       if (data.result) setAnResults((r) => ({ ...r, [category]: data.result }));
+      else throw new Error(data.error ?? "분석 실패");
+    } catch (e) {
+      setAnErr((er) => ({ ...er, [category]: e instanceof Error ? e.message : "분석 실패" }));
     } finally {
       setAnBusy((b) => ({ ...b, [category]: false }));
     }
@@ -310,7 +325,10 @@ export default function Home() {
         {selected && !selected.base && <div className="card empty">검색한 기업을 찾을 수 없습니다.</div>}
 
         {/* 비교 분석 패널 */}
-        {planLoading && <div className="card">분석 준비 중…</div>}
+        {planLoading && (
+          <div className="card">분석 준비 중… (처음 조회하는 기업은 사업보고서 다운로드로 수십 초 걸릴 수 있어요)</div>
+        )}
+        {planError && <div className="card empty">⚠ {planError}</div>}
         {plan && (
           <section className="card" id="analysis-panel">
             {!plan.available ? (
@@ -345,10 +363,11 @@ export default function Home() {
                           <span className="acc-meta">
                             {r?._mock && <span className="cat-badge">모의</span>}
                             <span className="acc-stat">
-                              {r ? "완료" : busy ? "분석 중…" : "분석하기"}
+                              {r ? "완료" : busy ? "분석 중…" : anErr[cat] ? "실패·재시도" : "분석하기"}
                             </span>
                           </span>
                         </button>
+                        {anErr[cat] && !r && <p className="an-err">⚠ {anErr[cat]}</p>}
                         {r && (
                           <div className="an-body">
                             <table className="an-table">

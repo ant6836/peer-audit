@@ -43,12 +43,10 @@ export async function getAnalysisPlan(
   }
   const companies = all.map((c) => ({ code: c.code, name: c.name }));
 
-  // 각 기업의 주석을 가져와(캐시됨) 카테고리 합집합 산출
+  // 각 기업의 주석을 병렬로 가져와(캐시됨) 카테고리 합집합 산출
   const catSet = new Set<string>();
-  for (const c of companies) {
-    const notes = await getCompanyNotes(c.code, c.name);
-    notes?.items.forEach((it) => catSet.add(it.category));
-  }
+  const notesList = await Promise.all(companies.map((c) => getCompanyNotes(c.code, c.name)));
+  notesList.forEach((notes) => notes?.items.forEach((it) => catSet.add(it.category)));
   const categories = [...catSet].sort((a, b) => {
     const ia = CATEGORY_ORDER.indexOf(a);
     const ib = CATEGORY_ORDER.indexOf(b);
@@ -163,9 +161,13 @@ export async function analyzeCategory(
   const cached = cache.get(key);
   if (cached) return { category, result: cached };
 
-  // 비교 기업들의 주석(캐시됨)
+  // 비교 기업들의 주석(병렬·캐시됨)
   const notesByCode: Record<string, CompanyNotes | null> = {};
-  for (const c of plan.companies) notesByCode[c.code] = await getCompanyNotes(c.code, c.name);
+  await Promise.all(
+    plan.companies.map(async (c) => {
+      notesByCode[c.code] = await getCompanyNotes(c.code, c.name);
+    })
+  );
 
   if (process.env.LLM_MOCK === "1") {
     const result = mockResult(plan, category, notesByCode);

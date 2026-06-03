@@ -443,6 +443,12 @@ td.chk input[type="checkbox"] {
   color: var(--ember);
 }
 
+.an-err {
+  margin: 4px 4px 14px 4px;
+  font-size: 13px;
+  color: var(--ember-deep);
+}
+
 /* ── 주석 보유 표시 점 ── */
 .dot-notes {
   display: inline-block;
