@@ -82,9 +82,165 @@ body {
 
 /* ── Layout ── */
 .container {
-  max-width: 880px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 56px 24px 96px;
+  padding: 48px 24px 96px;
+}
+
+/* 상단 헤더(제목·검색)는 본문폭보다 좁게 가운데 */
+.page-head {
+  max-width: 760px;
+}
+
+/* 선택 후 2단 레이아웃 */
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 28px;
+  align-items: start;
+  margin-top: 36px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 20px;
+}
+
+.sidebar-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.sb-name {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  color: var(--obsidian);
+}
+
+.sb-label {
+  margin: 20px 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gravel);
+}
+
+.peer-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow-y: auto;
+  border-top: 1px solid var(--chalk);
+}
+
+.peer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--chalk);
+}
+
+.peer-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ember);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.peer-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--obsidian);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--ember);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+
+.btn-link:hover {
+  color: var(--ember-deep);
+  text-decoration: underline;
+}
+
+.sb-btn {
+  width: 100%;
+  margin-top: 14px;
+  margin-left: 0;
+  justify-content: center;
+}
+
+.main {
+  min-width: 0; /* grid 자식 overflow 방지 */
+}
+
+/* 탭 */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--chalk);
+  margin-bottom: 22px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-family: var(--font-sans);
+  color: var(--gravel);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--obsidian);
+}
+
+.tab.active {
+  color: var(--ember);
+  border-bottom-color: var(--ember);
+  font-weight: 500;
+}
+
+/* 2단에서는 카드 위쪽 여백 제거(탭 바로 아래) */
+.main .card {
+  margin-top: 0;
+}
+
+.main .card + .card {
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .sidebar {
+    position: static;
+  }
+  .peer-list {
+    max-height: none;
+  }
 }
 
 .eyebrow {
