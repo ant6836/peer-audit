@@ -1,20 +1,31 @@
 /* 동종기업 분석 — DESIGN.md 기반 (라이트·에디토리얼 + PwC ember #FD5108 단일 액센트) */
 
 :root {
-  --eggshell: #fdfcfc; /* 페이지 ground */
+  /* ── Surfaces (ElevenLabs) ── */
+  --eggshell: #fdfcfc; /* 페이지 ground (순백 아님 — 따뜻한 거의-흰색) */
   --powder: #f5f3f1; /* hover·활성 surface */
-  --chalk: #e5e5e5; /* 보더 */
+
+  /* ── 회색 계열 (ElevenLabs 스케일) ── */
+  --chalk: #e5e5e5; /* 모든 보더·구분선 */
   --fog: #b1b0b0; /* 비활성·플레이스홀더 */
-  --gravel: #6b6660; /* 보조 텍스트 */
-  --obsidian: #141414; /* 주요 텍스트 */
-  --ember: #fd5108; /* PwC 브랜드 액센트 (유일한 컬러) */
-  --ember-wash: #fff1ea; /* ember 옅은 틴트 */
-  --ember-deep: #d8430a; /* ember hover */
+  --slate: #a59f97; /* 3차 텍스트·아이콘·약화 라벨 */
+  --gravel: #6b6660; /* 2차 본문·내비 (따뜻한 돌빛) */
+  --obsidian: #141414; /* 주요 텍스트·헤드라인 */
 
-  --font-sans: var(--font-sans), -apple-system, "Malgun Gothic", sans-serif;
-  --font-serif: var(--font-serif), Georgia, serif;
+  /* ── PwC ember — 유일한 액센트 (EL의 signal-blue/ember 점을 대체) ── */
+  --ember: #fd5108;
+  --ember-wash: #fff1ea;
+  --ember-deep: #d8430a;
 
-  --hairline: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.04);
+  /* ── 폰트 (next/font가 --font-noto-* 제공) ── */
+  --font-sans: var(--font-noto-sans), -apple-system, "Malgun Gothic", system-ui, sans-serif;
+  --font-serif: var(--font-noto-serif), Georgia, "Apple SD Gothic Neo", serif;
+
+  /* ── 헤어라인 엘리베이션 3단 (ElevenLabs) ── */
+  --shadow-inset: rgba(0, 0, 0, 0.075) 0 0 0 0.5px inset; /* 흰 입력/면 — 보더 대신 */
+  --shadow-2: rgba(0, 0, 0, 0.06) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 1px 2px,
+    rgba(0, 0, 0, 0.04) 0 2px 4px; /* 버튼 */
+  --shadow-card: rgba(0, 0, 0, 0.4) 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 4px; /* 카드 — 쌓이지 않고 뜬다 */
 }
 
 * {
@@ -87,12 +98,20 @@ body {
 
 .title {
   font-family: var(--font-serif);
-  font-weight: 300;
-  font-size: 44px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-weight: 300; /* ElevenLabs: 디스플레이는 라이트 세리프 300, 굵게 금지 */
+  font-size: 48px; /* display */
+  line-height: 1.08;
+  letter-spacing: -0.96px; /* EL display tracking */
   color: var(--obsidian);
   margin: 0 0 12px;
+}
+
+@media (max-width: 600px) {
+  .title {
+    font-size: 34px;
+    letter-spacing: -0.68px;
+    line-height: 1.13;
+  }
 }
 
 .subtitle {
@@ -117,6 +136,7 @@ body {
   border-radius: 10px;
   color: var(--obsidian);
   outline: none;
+  box-shadow: var(--shadow-inset); /* EL: 흰 면엔 inset 헤어라인 */
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -126,7 +146,7 @@ body {
 
 .search-input:focus {
   border-color: var(--ember);
-  box-shadow: 0 0 0 3px rgba(253, 81, 8, 0.15);
+  box-shadow: var(--shadow-inset), 0 0 0 3px rgba(253, 81, 8, 0.15);
 }
 
 .hint {
@@ -145,7 +165,7 @@ body {
   border-radius: 12px;
   overflow: hidden;
   z-index: 10;
-  box-shadow: var(--hairline), 0 12px 28px rgba(20, 20, 20, 0.08);
+  box-shadow: var(--shadow-2), 0 12px 28px rgba(20, 20, 20, 0.08);
 }
 
 .dropdown-item {
@@ -189,9 +209,9 @@ body {
 .card {
   margin-top: 32px;
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 16px; /* EL cards */
   padding: 28px;
-  box-shadow: var(--hairline);
+  box-shadow: var(--shadow-card);
 }
 
 .card-head {
@@ -204,8 +224,9 @@ body {
 .card-head h2 {
   font-family: var(--font-serif);
   font-weight: 300;
-  font-size: 28px;
-  letter-spacing: -0.02em;
+  font-size: 32px; /* EL heading */
+  line-height: 1.13;
+  letter-spacing: -0.64px;
   margin: 0;
   color: var(--obsidian);
 }
@@ -293,6 +314,7 @@ td.action {
   font-weight: 500;
   font-family: var(--font-sans);
   cursor: pointer;
+  box-shadow: var(--shadow-2);
   transition: background 0.15s;
 }
 
@@ -309,6 +331,7 @@ td.action {
   font-size: 13px;
   font-family: var(--font-sans);
   cursor: pointer;
+  box-shadow: var(--shadow-2);
   transition: border-color 0.15s, color 0.15s;
 }
 
@@ -398,7 +421,7 @@ td.action {
 
 .acc-stat {
   font-size: 12px;
-  color: var(--fog);
+  color: var(--slate); /* 3차 텍스트 */
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
