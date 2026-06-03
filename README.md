@@ -1,22 +1,34 @@
-# 동종기업 분석 웹서비스 — MVP-0
+# 동종기업 분석 웹서비스 — MVP-1
 
-기업을 검색하면 KRX 상장사 중 **같은 업종의 동종기업**을 찾아주는 웹앱입니다.
-상위 폴더(`동종기업_분석`)의 CLI 파이프라인을 웹서비스로 옮기는 첫 단계(MVP-0)로,
-**외부 API 없이** 정적 데이터만으로 동작하므로 Vercel 배포가 가장 단순합니다.
+기업을 검색해 KRX 상장사 중 **같은 업종의 동종기업**을 찾고, 각 사의
+**연결재무제표 주석을 항목별로** 살펴보는 웹앱입니다.
+상위 폴더(`동종기업_분석`)의 CLI 파이프라인을 웹서비스로 옮기는 중입니다.
 
 ## 이번 단계에서 되는 것
 
-- 🔍 기업명 검색(자동완성)
+- 🔍 기업명 검색(자동완성) · 점(●)으로 주석 제공 여부 표시
 - 🏢 선택한 기업의 업종 표시
 - 👥 같은 업종 동종기업 목록
+- 📄 **연결재무제표 주석 뷰어** — 항목별 제목·표준카테고리·글자수·표수, 클릭하면 본문 펼침
 
-> 다음 단계 예정: 주석 파싱(MVP-1) → LLM 동종업계 비교 분석(MVP-2). 분석 단계의 LLM은
-> 배포본에서 공개 Anthropic API, 로컬에서는 PwC GenAI를 쓰도록 어댑터로 분기할 예정입니다.
+> 다음 단계 예정: LLM 동종업계 비교 분석(MVP-2, OpenRouter) · 임의 기업 live DART 연동.
 
 ## 데이터 출처
 
-`data/companies.json` — 상위 `krx_listing_desc.csv`(1단계 산출물)에서
-`code·name·market·industry` 4개 컬럼만 추출한 슬림본(2,878개사).
+- `data/companies.json` — 상위 `krx_listing_desc.csv`에서 `code·name·market·industry`만 추출(2,878개사)
+- `data/notes-fixtures.json` — 6개 쇼케이스 기업(하이브·에스엠·JYP·YG·큐브엔터·알비더블유)의
+  연결주석을 `lib/dart/notes.ts` 파서로 미리 분해한 결과. 상위 `연결주석/_cache/*.xml`(DART 원문)에서 생성.
+- `data/notes-available.json` — 주석 제공 기업 코드 목록(UI 배지용)
+
+> 임의 기업은 향후 live DART 연동(Vercel)에서 실시간 파싱 예정. 로컬은 사내망 TLS로 DART 직접 호출이 어려워
+> 현재는 캐시 기반 픽스처로 동작/검증합니다.
+
+## 개발용 스크립트
+
+```bash
+node scripts/test-notes.ts      # 캐시 XML로 파서 검증(항목 수·카테고리 출력)
+node scripts/build-fixtures.ts  # 캐시 XML → data/notes-fixtures.json 재생성
+```
 
 ## 로컬 실행
 

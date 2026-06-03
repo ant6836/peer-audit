@@ -1,6 +1,7 @@
 // GET /api/peers?code=352820  → 해당 기업과 같은 업종의 동종기업 목록
 import { NextRequest, NextResponse } from "next/server";
 import { getPeers } from "@/lib/companies";
+import { hasNotes } from "@/lib/dart/store";
 
 export function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code")?.trim() ?? "";
@@ -16,10 +17,11 @@ export function GET(req: NextRequest) {
     );
   }
 
+  // 주석 데이터 보유 여부를 함께 실어 UI 배지에 활용
   return NextResponse.json({
-    base: result.base,
+    base: { ...result.base, notes: hasNotes(result.base.code) },
     industry: result.industry,
     peerCount: result.peers.length,
-    peers: result.peers,
+    peers: result.peers.map((p) => ({ ...p, notes: hasNotes(p.code) })),
   });
 }
