@@ -1,6 +1,7 @@
 // DART OpenAPI 라이브 연동 — 03_build_notes.py / dart_report.py 의 흐름을 TS로 포팅.
 // 종목코드 → corp_code(번들 맵) → 최신 사업보고서(list.json) → document.xml(ZIP) → 연결주석 파싱.
 // DART_API_KEY 환경변수 필요. 로컬은 사내망 TLS로 직접호출 불가 → Vercel에서 동작.
+import { unstable_cache } from "next/cache";
 import { unzipSync, strFromU8 } from "fflate";
 import corpcodes from "@/data/corpcodes.json";
 import { parseConsolidatedNotes } from "@/lib/dart/notes";
@@ -31,55 +32,53 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   }
 }
 
-// 인스턴스 메모리 캐시 (DART 재호출·재파싱 방지). null = 시도했으나 없음.
-// 진행 중 Promise도 캐시해 동시 요청이 같은 보고서를 중복 다운로드하지 않게 한다.
-const liveCache = new Map<string, CompanyNotes | null>();
-const inflight = new Map<string, Promise<CompanyNotes | null>>();
+// 실제 DART 조회·파싱. 실패 시 throw (→ 캐시에 저장되지 않음).
+async function fetchLiveNotesRaw(stock: string, name: string): Promise<CompanyNotes> {
+  const key = process.env.DART_API_KEY?.trim();
+  const corp = corpCodeOf(stock);
+  if (!key) throw new Error("DART_API_KEY 미설정");
+  if (!corp) throw new Error("corp_code 없음(비상장/미수록)");
 
-/** DART에서 해당 종목의 연결주석을 실시간으로 가져와 파싱. 실패 시 null. */
+  // 1) 최신 사업보고서(A001)의 접수번호
+  const listUrl =
+    `${LIST_URL}?crtfc_key=${key}&corp_code=${corp}` +
+    `&bgn_de=20220101&end_de=20261231&pblntf_detail_ty=A001&page_count=10&sort=date&sort_mth=desc`;
+  const list = await (await fetchWithTimeout(listUrl, 12_000)).json();
+  if (list.status !== "000") throw new Error(`list.json status=${list.status}`);
+  const rep = (list.list ?? []).find((it: { report_nm?: string }) =>
+    (it.report_nm ?? "").includes("사업보고서")
+  );
+  if (!rep) throw new Error("사업보고서 없음");
+
+  // 2) document.xml(ZIP) 다운로드 → 대표 XML 추출
+  const docRes = await fetchWithTimeout(`${DOC_URL}?crtfc_key=${key}&rcept_no=${rep.rcept_no}`, 35_000);
+  const buf = new Uint8Array(await docRes.arrayBuffer());
+  const files = unzipSync(buf);
+  const names = Object.keys(files);
+  let main = names.find((n) => n === `${rep.rcept_no}.xml`);
+  if (!main) main = names.sort((a, b) => files[b].length - files[a].length)[0];
+  const xml = strFromU8(files[main]);
+
+  // 3) 연결주석 파싱 — 항목 텍스트는 6000자로 캡(캐시 크기·LLM 입력 안정화)
+  const items = parseConsolidatedNotes(xml).map((it) =>
+    it.text.length > 6000 ? { ...it, text: it.text.slice(0, 6000) + " …(생략)" } : it
+  );
+  return { name, rcept: rep.rcept_no, items, source: "live" };
+}
+
+// Next.js Data Cache(Vercel 영속·인스턴스 공유)로 감싼다 — 한 번 받은 보고서를 재사용해
+// 카테고리별 POST마다 재다운로드(→504)하지 않게 한다. 성공만 캐시(throw는 캐시 안 됨).
+const cachedFetch = unstable_cache(
+  (stock: string, name: string) => fetchLiveNotesRaw(stock, name),
+  ["dart-live-notes-v1"],
+  { revalidate: 86400 } // 보고서는 잘 안 바뀜 → 1일
+);
+
+/** DART 라이브 연결주석. 실패/없음 시 null. 성공 결과는 영속 캐시. */
 export async function fetchLiveNotes(stock: string, name: string): Promise<CompanyNotes | null> {
-  if (liveCache.has(stock)) return liveCache.get(stock)!;
-  const pending = inflight.get(stock);
-  if (pending) return pending; // 동시 요청 합치기
-
-  const p = (async (): Promise<CompanyNotes | null> => {
-    const key = process.env.DART_API_KEY?.trim();
-    const corp = corpCodeOf(stock);
-    if (!key || !corp) return null;
-
-    try {
-      // 1) 최신 사업보고서(A001)의 접수번호
-      const listUrl =
-        `${LIST_URL}?crtfc_key=${key}&corp_code=${corp}` +
-        `&bgn_de=20220101&end_de=20261231&pblntf_detail_ty=A001&page_count=10&sort=date&sort_mth=desc`;
-      const list = await (await fetchWithTimeout(listUrl, 12_000)).json();
-      if (list.status !== "000") throw new Error(`list.json status=${list.status}`);
-      const rep = (list.list ?? []).find((it: { report_nm?: string }) =>
-        (it.report_nm ?? "").includes("사업보고서")
-      );
-      if (!rep) throw new Error("사업보고서 없음");
-
-      // 2) document.xml(ZIP) 다운로드 → 대표 XML 추출
-      const docRes = await fetchWithTimeout(`${DOC_URL}?crtfc_key=${key}&rcept_no=${rep.rcept_no}`, 35_000);
-      const buf = new Uint8Array(await docRes.arrayBuffer());
-      const files = unzipSync(buf);
-      const names = Object.keys(files);
-      // 대표 문서는 '{rcept_no}.xml'. 없으면 가장 큰 파일.
-      let main = names.find((n) => n === `${rep.rcept_no}.xml`);
-      if (!main) main = names.sort((a, b) => files[b].length - files[a].length)[0];
-      const xml = strFromU8(files[main]);
-
-      // 3) 연결주석 파싱
-      const items = parseConsolidatedNotes(xml);
-      return { name, rcept: rep.rcept_no, items, source: "live" };
-    } catch {
-      return null;
-    }
-  })();
-
-  inflight.set(stock, p);
-  const result = await p;
-  liveCache.set(stock, result);
-  inflight.delete(stock);
-  return result;
+  try {
+    return await cachedFetch(stock, name);
+  } catch {
+    return null;
+  }
 }
