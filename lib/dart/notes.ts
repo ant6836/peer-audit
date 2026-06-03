@@ -66,6 +66,9 @@ const CATEGORY_RULES: [string, string[]][] = [
   ["보고기간 후 사건", ["보고기간후", "후사건"]],
 ];
 
+// 표준 카테고리 정렬 순서(회계 흐름) — 비교 분석에서 카테고리 정렬에 사용
+export const CATEGORY_ORDER: string[] = CATEGORY_RULES.map(([cat]) => cat);
+
 // 주석 표제 → 표준 카테고리. 매칭 실패 시 '기타: 원제목'.
 function categorize(title: string): string {
   const n = norm(title.replace(/\((연결|별도|개별)\)/g, ""));

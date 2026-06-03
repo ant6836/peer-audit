@@ -340,6 +340,85 @@ td.action {
   color: var(--ember);
 }
 
+.head-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── 비교 분석 ── */
+.an-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 0 4px;
+}
+
+.an-toolbar .btn-ember {
+  margin-left: 0;
+}
+
+.an-progress {
+  font-size: 13px;
+  color: var(--gravel);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-body {
+  padding: 6px 4px 20px 4px;
+}
+
+.an-table {
+  margin: 4px 0 14px;
+}
+
+.an-table th {
+  font-size: 12px;
+}
+
+.an-table td {
+  font-size: 13px;
+  color: var(--gravel);
+  vertical-align: top;
+}
+
+.an-table td.an-base {
+  color: var(--ember);
+  font-weight: 700;
+}
+
+.an-table td:first-child {
+  color: var(--obsidian);
+  white-space: nowrap;
+  width: 1%;
+  padding-right: 20px;
+}
+
+.an-line {
+  margin: 6px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--gravel);
+}
+
+.an-line b {
+  color: var(--obsidian);
+  font-weight: 500;
+  margin-right: 6px;
+}
+
+.an-line.audit {
+  background: var(--ember-wash);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--obsidian);
+}
+
+.an-line.audit b {
+  color: var(--ember);
+}
+
 /* ── 주석 보유 표시 점 ── */
 .dot-notes {
   display: inline-block;
