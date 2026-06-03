@@ -193,10 +193,9 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: baseCode, category, codes }),
       });
-      if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
-      const data = await res.json();
-      if (data.result) setAnResults((r) => ({ ...r, [category]: data.result }));
-      else throw new Error(data.error ?? "분석 실패");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.result) throw new Error(data.error ?? `서버 오류 (${res.status})`);
+      setAnResults((r) => ({ ...r, [category]: data.result }));
     } catch (e) {
       setAnErr((er) => ({ ...er, [category]: e instanceof Error ? e.message : "분석 실패" }));
     } finally {
