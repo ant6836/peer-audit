@@ -729,7 +729,6 @@ td.chk input[type="checkbox"] {
   border-collapse: collapse;
   font-size: 12px;
   min-width: 100%;
-  white-space: nowrap;
 }
 
 .note-table th,
@@ -737,6 +736,11 @@ td.chk input[type="checkbox"] {
   border-bottom: 1px solid var(--chalk);
   border-right: 1px solid var(--chalk);
   padding: 6px 10px;
+  /* 긴 서술이 든 셀(레이아웃 표 잔재)이 표를 무한정 넓히지 않도록 줄바꿈+최대폭 */
+  max-width: 340px;
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: top;
 }
 
 .note-table tr:last-child th,

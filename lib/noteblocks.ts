@@ -24,8 +24,26 @@ export function parseNoteBlocks(text: string): NoteBlock[] {
     const isTable = lines.length >= 2 && lines.every((l) => l.startsWith("|"));
 
     if (isTable) {
-      const rows = lines.map(parseCells).filter((cells) => !isSeparator(cells));
+      let rows = lines.map(parseCells).filter((cells) => !isSeparator(cells));
       if (rows.length) {
+        // 열 수 정규화(패딩)
+        let width = Math.max(...rows.map((r) => r.length));
+        rows = rows.map((r) => {
+          const c = [...r];
+          while (c.length < width) c.push("");
+          return c;
+        });
+        // 모든 행이 비어 있는 꼬리 열 제거(DART 표 끝의 빈 칸)
+        while (width > 1 && rows.every((r) => r[width - 1] === "")) {
+          rows.forEach((r) => r.pop());
+          width--;
+        }
+        // 사실상 1열이면 표가 아니라 텍스트로 취급
+        if (width <= 1) {
+          const t = rows.map((r) => r[0]).filter(Boolean).join(" ").trim();
+          if (t) out.push({ type: "p", text: t });
+          continue;
+        }
         const [head, ...body] = rows;
         out.push({ type: "table", head, rows: body });
         continue;
