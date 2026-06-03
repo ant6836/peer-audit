@@ -1,6 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { parseNoteBlocks } from "@/lib/noteblocks";
+
+// 주석 본문을 문단/표로 렌더 (마크다운 표 → 실제 HTML 표)
+function NoteText({ text }: { text: string }) {
+  const blocks = parseNoteBlocks(text);
+  return (
+    <>
+      {blocks.map((b, i) =>
+        b.type === "table" ? (
+          <div className="note-table-wrap" key={i}>
+            <table className="note-table">
+              <thead>
+                <tr>{b.head.map((c, j) => <th key={j}>{c}</th>)}</tr>
+              </thead>
+              <tbody>
+                {b.rows.map((r, ri) => (
+                  <tr key={ri}>{r.map((c, ci) => <td key={ci}>{c}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="note-p" key={i}>{b.text}</p>
+        )
+      )}
+    </>
+  );
+}
 
 interface Company {
   code: string;
@@ -343,7 +371,9 @@ export default function Home() {
                           <span className="chev">{openItem === it.num ? "−" : "+"}</span>
                         </span>
                       </button>
-                      {openItem === it.num && <pre className="acc-body">{it.text}</pre>}
+                      {openItem === it.num && (
+                        <div className="acc-body"><NoteText text={it.text} /></div>
+                      )}
                     </div>
                   ))}
                 </div>

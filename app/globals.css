@@ -514,14 +514,73 @@ td.action {
 
 .acc-body {
   margin: 0;
-  padding: 8px 4px 20px 38px;
-  white-space: pre-wrap;
-  word-break: break-word;
+  padding: 8px 4px 22px 38px;
   font-family: var(--font-sans);
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--gravel);
+}
+
+.note-p {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.note-p:last-child {
+  margin-bottom: 0;
+}
+
+/* 주석 표 — 마크다운 → 실제 표 */
+.note-table-wrap {
   overflow-x: auto;
+  margin: 10px 0 16px;
+  border: 1px solid var(--chalk);
+  border-radius: 10px;
+}
+
+.note-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 100%;
+  white-space: nowrap;
+}
+
+.note-table th,
+.note-table td {
+  border-bottom: 1px solid var(--chalk);
+  border-right: 1px solid var(--chalk);
+  padding: 6px 10px;
+}
+
+.note-table tr:last-child th,
+.note-table tr:last-child td {
+  border-bottom: none;
+}
+
+.note-table th:last-child,
+.note-table td:last-child {
+  border-right: none;
+}
+
+.note-table thead th {
+  background: var(--powder);
+  color: var(--obsidian);
+  font-weight: 500;
+  text-align: left;
+  position: sticky;
+  top: 0;
+}
+
+.note-table td {
+  color: var(--gravel);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.note-table td:first-child {
+  text-align: left;
+  color: var(--obsidian);
 }
 
 @media (max-width: 640px) {
