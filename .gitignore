@@ -1,0 +1,18 @@
+# 의존성
+/node_modules
+
+# Next.js 빌드 산출물
+/.next/
+/out/
+
+# 환경변수 (키가 들어감 — 절대 커밋 금지)
+.env
+.env*.local
+
+# 로그·OS
+*.log
+.DS_Store
+Thumbs.db
+
+# 타입 정의 (자동 생성)
+next-env.d.ts

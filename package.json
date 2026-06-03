@@ -1,0 +1,23 @@
+{
+  "name": "peer-audit-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "동종기업 분석 웹서비스 (MVP-0: 기업 검색 + 동종기업 조회)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^16.2.7",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

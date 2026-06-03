@@ -1,0 +1,276 @@
+/* 동종기업 분석 — DESIGN.md 기반 (라이트·에디토리얼 + PwC ember #FD5108 단일 액센트) */
+
+:root {
+  --eggshell: #fdfcfc; /* 페이지 ground */
+  --powder: #f5f3f1; /* hover·활성 surface */
+  --chalk: #e5e5e5; /* 보더 */
+  --fog: #b1b0b0; /* 비활성·플레이스홀더 */
+  --gravel: #6b6660; /* 보조 텍스트 */
+  --obsidian: #141414; /* 주요 텍스트 */
+  --ember: #fd5108; /* PwC 브랜드 액센트 (유일한 컬러) */
+  --ember-wash: #fff1ea; /* ember 옅은 틴트 */
+  --ember-deep: #d8430a; /* ember hover */
+
+  --font-sans: var(--font-sans), -apple-system, "Malgun Gothic", sans-serif;
+  --font-serif: var(--font-serif), Georgia, serif;
+
+  --hairline: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--eggshell);
+  color: var(--obsidian);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Top Navigation (로고 좌측 상단) ── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--chalk);
+  background: var(--eggshell);
+}
+
+.nav-inner {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.nav-badge {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ember);
+  background: var(--ember-wash);
+  border-radius: 9999px;
+  padding: 4px 12px;
+}
+
+/* ── Layout ── */
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 24px 96px;
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ember);
+  margin: 0 0 10px;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--obsidian);
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  color: var(--gravel);
+  margin: 0 0 36px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── Search ── */
+.search-box {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-family: var(--font-sans);
+  background: #ffffff;
+  border: 1px solid var(--chalk);
+  border-radius: 10px;
+  color: var(--obsidian);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-input::placeholder {
+  color: var(--fog);
+}
+
+.search-input:focus {
+  border-color: var(--ember);
+  box-shadow: 0 0 0 3px rgba(253, 81, 8, 0.15);
+}
+
+.hint {
+  color: var(--gravel);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* ── Autocomplete Dropdown ── */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 10;
+  box-shadow: var(--hairline), 0 12px 28px rgba(20, 20, 20, 0.08);
+}
+
+.dropdown-item {
+  padding: 12px 16px 12px 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--chalk);
+  border-left: 2px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: var(--powder);
+  border-left-color: var(--ember); /* 활성 항목 ember 인디케이터 바 */
+}
+
+.company-name {
+  font-weight: 500;
+  color: var(--obsidian);
+}
+
+/* ── Tag / Badge ── */
+.tag {
+  font-size: 12px;
+  color: var(--gravel);
+  background: var(--powder);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Company Card ── */
+.card {
+  margin-top: 32px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: var(--hairline);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.card-head h2 {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--obsidian);
+}
+
+.industry {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ember);
+}
+
+.peer-count {
+  margin: 24px 0 14px;
+  font-size: 15px;
+  color: var(--gravel);
+}
+
+.peer-count strong {
+  color: var(--ember);
+  font-weight: 700;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Data Table ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--chalk);
+}
+
+th {
+  color: var(--gravel);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+td {
+  color: var(--obsidian);
+}
+
+td.code {
+  font-variant-numeric: tabular-nums;
+  color: var(--gravel);
+}
+
+tbody tr {
+  transition: background 0.12s;
+}
+
+tbody tr:hover {
+  background: var(--powder);
+}
+
+.empty {
+  color: var(--gravel);
+  padding: 16px 0;
+}
