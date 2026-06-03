@@ -8,7 +8,9 @@ export function GET(req: NextRequest) {
   if (!code) {
     return NextResponse.json({ error: "code 파라미터가 필요합니다." }, { status: 400 });
   }
-  const plan = getAnalysisPlan(code);
+  const codesParam = req.nextUrl.searchParams.get("codes")?.trim();
+  const codes = codesParam ? codesParam.split(",").filter(Boolean) : undefined;
+  const plan = getAnalysisPlan(code, codes);
   if (!plan || plan.companies.length < 2) {
     return NextResponse.json({
       available: false,
@@ -19,7 +21,7 @@ export function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { code?: string; category?: string };
+  let body: { code?: string; category?: string; codes?: string[] };
   try {
     body = await req.json();
   } catch {
@@ -27,12 +29,13 @@ export async function POST(req: NextRequest) {
   }
   const code = body.code?.trim();
   const category = body.category?.trim();
+  const codes = Array.isArray(body.codes) ? body.codes : undefined;
   if (!code || !category) {
     return NextResponse.json({ error: "code 와 category 가 필요합니다." }, { status: 400 });
   }
 
   try {
-    const out = await analyzeCategory(code, category);
+    const out = await analyzeCategory(code, category, codes);
     if (!out) {
       return NextResponse.json({ error: "분석 대상이 아닙니다." }, { status: 404 });
     }

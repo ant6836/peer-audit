@@ -23,12 +23,20 @@ export interface AnalysisPlan {
   categories: string[]; // 분석 대상 카테고리(회계 흐름 순)
 }
 
-/** 기준기업 + 동종기업 중 주석 보유 기업과, 그 합집합 카테고리를 산출. */
-export function getAnalysisPlan(baseCode: string): AnalysisPlan | null {
+/**
+ * 기준기업 + 동종기업 중 주석 보유 기업과, 그 합집합 카테고리를 산출.
+ * @param selectedCodes 비교 대상으로 선택된 종목코드(있으면 그 집합으로 한정, 기준기업은 항상 포함)
+ */
+export function getAnalysisPlan(baseCode: string, selectedCodes?: string[]): AnalysisPlan | null {
   const peers = getPeers(baseCode);
   if (!peers) return null;
 
-  const all = [peers.base, ...peers.peers].filter((c) => hasNotes(c.code));
+  let all = [peers.base, ...peers.peers].filter((c) => hasNotes(c.code));
+  if (selectedCodes && selectedCodes.length) {
+    const set = new Set(selectedCodes);
+    set.add(peers.base.code); // 기준기업은 항상 포함
+    all = all.filter((c) => set.has(c.code));
+  }
   const companies = all.map((c) => ({ code: c.code, name: c.name }));
 
   const catSet = new Set<string>();
@@ -131,13 +139,16 @@ const cache = new Map<string, AnalysisResult>();
 /** 카테고리 1개 비교 분석. LLM_MOCK=1 이면 모의 응답. */
 export async function analyzeCategory(
   baseCode: string,
-  category: string
+  category: string,
+  selectedCodes?: string[]
 ): Promise<{ category: string; result: AnalysisResult } | null> {
-  const plan = getAnalysisPlan(baseCode);
+  const plan = getAnalysisPlan(baseCode, selectedCodes);
   if (!plan) return null;
   if (!plan.categories.includes(category)) return null;
 
-  const key = `${baseCode}::${category}`;
+  // 캐시 키는 실제 비교 기업 집합 + 카테고리 (선택이 바뀌면 결과도 다름)
+  const setKey = plan.companies.map((c) => c.code).sort().join(",");
+  const key = `${setKey}::${category}`;
   const cached = cache.get(key);
   if (cached) return { category, result: cached };
 

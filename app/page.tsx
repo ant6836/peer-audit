@@ -99,6 +99,7 @@ export default function Home() {
   const [anResults, setAnResults] = useState<Record<string, AnalysisResult>>({});
   const [anBusy, setAnBusy] = useState<Record<string, boolean>>({});
   const [runningAll, setRunningAll] = useState(false);
+  const [sel, setSel] = useState<string[]>([]); // 비교 선택된 동종기업 코드(기준기업 제외)
 
   useEffect(() => {
     if (!query.trim()) {
@@ -131,9 +132,17 @@ export default function Home() {
     setPlan(null);
     setAnResults({});
     setAnBusy({});
+    setSel([]);
     const res = await fetch(`/api/peers?code=${c.code}`);
-    setSelected(await res.json());
+    const data: PeersResponse = await res.json();
+    setSelected(data);
+    // 기본 선택: 주석 보유 동종기업 중 상위 7개 (비용·표 폭 고려)
+    setSel((data.peers ?? []).filter((p) => p.notes).slice(0, 7).map((p) => p.code));
     setLoading(false);
+  }
+
+  function togglePeer(code: string) {
+    setSel((s) => (s.includes(code) ? s.filter((x) => x !== code) : [...s, code]));
   }
 
   async function viewNotes(c: Company) {
@@ -147,13 +156,16 @@ export default function Home() {
     setTimeout(() => document.getElementById("notes-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
 
-  // 비교 분석 시작 → 계획 로드
-  async function openAnalysis(baseCode: string) {
+  // 비교 분석 시작 → 선택된 기업 집합으로 계획 로드
+  async function openAnalysis() {
+    if (!selected?.base) return;
+    const baseCode = selected.base.code;
+    const codes = [baseCode, ...sel];
     setPlanLoading(true);
     setPlan(null);
     setAnResults({});
     setAnBusy({});
-    const res = await fetch(`/api/analyze?code=${baseCode}`);
+    const res = await fetch(`/api/analyze?code=${baseCode}&codes=${codes.join(",")}`);
     const data: AnalysisPlan = await res.json();
     setPlan(data);
     setPlanLoading(false);
@@ -161,14 +173,14 @@ export default function Home() {
   }
 
   // 카테고리 1개 분석 (이미 있거나 진행 중이면 스킵)
-  async function analyzeOne(baseCode: string, category: string) {
+  async function analyzeOne(baseCode: string, category: string, codes: string[]) {
     if (anResults[category] || anBusy[category]) return;
     setAnBusy((b) => ({ ...b, [category]: true }));
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: baseCode, category }),
+        body: JSON.stringify({ code: baseCode, category, codes }),
       });
       const data = await res.json();
       if (data.result) setAnResults((r) => ({ ...r, [category]: data.result }));
@@ -178,14 +190,14 @@ export default function Home() {
   }
 
   // 전체 분석 (동시 4개)
-  async function analyzeAll(baseCode: string, categories: string[]) {
+  async function analyzeAll(baseCode: string, categories: string[], codes: string[]) {
     setRunningAll(true);
     const todo = categories.filter((c) => !anResults[c]);
     let i = 0;
     const worker = async () => {
       while (i < todo.length) {
         const cat = todo[i++];
-        await analyzeOne(baseCode, cat);
+        await analyzeOne(baseCode, cat, codes);
       }
     };
     await Promise.all(Array.from({ length: 4 }, worker));
@@ -245,7 +257,9 @@ export default function Home() {
               {selected.base.notes && (
                 <div className="head-actions">
                   <button className="btn-ghost-sm" onClick={() => viewNotes(selected.base)}>연결주석</button>
-                  <button className="btn-ember" onClick={() => openAnalysis(selected.base.code)}>동종업계 비교 분석</button>
+                  <button className="btn-ember" onClick={openAnalysis} disabled={sel.length === 0}>
+                    동종업계 비교 분석 ({sel.length + 1}개사)
+                  </button>
                 </div>
               )}
             </div>
@@ -257,11 +271,22 @@ export default function Home() {
             ) : (
               <table>
                 <thead>
-                  <tr><th>회사명</th><th>시장</th><th>종목코드</th><th></th></tr>
+                  <tr><th className="chk">비교</th><th>회사명</th><th>시장</th><th>종목코드</th><th></th></tr>
                 </thead>
                 <tbody>
                   {selected.peers.map((p) => (
                     <tr key={p.code}>
+                      <td className="chk">
+                        {p.notes ? (
+                          <input
+                            type="checkbox"
+                            checked={sel.includes(p.code)}
+                            onChange={() => togglePeer(p.code)}
+                          />
+                        ) : (
+                          <span className="chk-na" title="주석 데이터 없음">–</span>
+                        )}
+                      </td>
                       <td>{p.name}</td>
                       <td>{p.market}</td>
                       <td className="code">{p.code}</td>
@@ -272,6 +297,12 @@ export default function Home() {
                   ))}
                 </tbody>
               </table>
+            )}
+            {selected.base.notes && (
+              <p className="hint">
+                비교할 동종기업을 체크하세요. 주석 데이터가 있는 기업만 선택 가능합니다(기준기업 항상 포함).
+                {sel.length + 1 > 8 && " · 8개사 이하를 권장합니다(비용·표 가독성)."}
+              </p>
             )}
           </section>
         )}
@@ -296,7 +327,7 @@ export default function Home() {
                   <button
                     className="btn-ember"
                     disabled={runningAll}
-                    onClick={() => analyzeAll(plan.base!.code, plan.categories!)}
+                    onClick={() => analyzeAll(plan.base!.code, plan.categories!, plan.companies!.map((c) => c.code))}
                   >
                     {runningAll ? `분석 중… ${doneCount}/${plan.categories!.length}` : "전체 분석"}
                   </button>
@@ -309,7 +340,7 @@ export default function Home() {
                     const busy = anBusy[cat];
                     return (
                       <div className="acc-item" key={cat}>
-                        <button className="acc-head" onClick={() => analyzeOne(plan.base!.code, cat)}>
+                        <button className="acc-head" onClick={() => analyzeOne(plan.base!.code, cat, plan.companies!.map((c) => c.code))}>
                           <span className="acc-title">{cat}</span>
                           <span className="acc-meta">
                             {r?._mock && <span className="cat-badge">모의</span>}
