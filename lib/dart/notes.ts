@@ -118,9 +118,16 @@ function tableToMarkdown(tableHtml: string): string {
 }
 
 // 한 섹션 → (표 개수, 평문). 표는 마크다운으로 보존.
+// DART는 레이아웃용으로 표를 중첩하므로(바깥=레이아웃, 안=데이터), '가장 안쪽 표'만
+// 데이터 표로 인식한다. 바깥 레이아웃 표의 서술 텍스트는 태그만 제거돼 일반 문단이 된다.
+// 안쪽 표 → 바깥 표 순으로 여러 단계도 처리되도록 더 이상 안쪽 표가 없을 때까지 반복.
 function toPlain(section: string): [number, string] {
   const tables: string[] = [];
-  let s = section.replace(/<TABLE[\s\S]*?<\/TABLE>/gi, (m) => {
+  // 내부에 <TABLE>를 포함하지 않는 표(=가장 안쪽 데이터 표)만 1회 매칭.
+  // (단일 패스여야 함 — 반복하면 바깥 레이아웃 표가 '안쪽'이 되어 다시 표로 잡힘)
+  // 바깥 레이아웃 표 태그는 아래 태그 제거 단계에서 사라져 서술이 일반 문단이 된다.
+  const INNER = /<TABLE\b(?:(?!<TABLE\b)[\s\S])*?<\/TABLE>/gi;
+  let s = section.replace(INNER, (m) => {
     const md = tableToMarkdown(m);
     if (!md) return " ";
     tables.push(md);
